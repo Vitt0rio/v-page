@@ -7,13 +7,12 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
   <div class="home-screen">
     <div class="home-box">
 
-      <!-- ⚡ BORDE ELÉCTRICO (SE MANTIENE) -->
+      <!-- ⚡ BORDE ELÉCTRICO -->
       <svg class="electric-border" viewBox="0 0 100 100" preserveAspectRatio="none">
         <rect x="0" y="0" width="100" height="100" class="electric-base" />
         <rect x="0" y="0" width="100" height="100" class="electric-anim" />
       </svg>
 
-      <!-- 🔥 LOGO EN VEZ DE TEXTO -->
       <img src="/logo.png" alt="V logo" class="home-logo" />
 
       <div class="home-actions">
@@ -27,18 +26,20 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
 
   <style>
     .home-screen {
-      height: 80vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
 
     .home-box {
       position: relative;
       background: var(--bg-secondary);
-      padding: 120px 150px;
+      width: 100%;
+      max-width: 520px;
+      padding: 90px 60px;
       text-align: center;
-      border: none;
       overflow: hidden;
       transition: transform 0.4s ease;
     }
@@ -47,7 +48,7 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
       transform: translateY(-6px);
     }
 
-    /* ⚡ BORDE SVG (SE MANTIENE) */
+    /* ⚡ BORDE */
 
     .electric-border {
       position: absolute;
@@ -92,16 +93,17 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
     }
 
     .home-box:hover .electric-anim {
-      animation: electric-flow 1.1s ease forwards;
+      animation: electric-flow 1.4s ease forwards; /* un poco más suave */
     }
 
-    /* 🔥 LOGO GRANDE Y BLANCO */
+    /* 🔥 LOGO */
 
     .home-logo {
-      width: 240px;
+      width: 200px;
+      max-width: 80%;
       height: auto;
       display: block;
-      margin: 0 auto 60px auto;
+      margin: 0 auto 50px auto;
       filter: invert(1);
       opacity: 0.95;
       transition: transform 0.3s ease;
@@ -114,18 +116,17 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
     }
 
     .home-actions {
-      margin-top: 10px;
       position: relative;
       z-index: 2;
     }
 
     .home-button {
       display: inline-block;
-      padding: 16px 60px;
+      padding: 14px 50px;
       border: 1px solid var(--border);
       color: var(--text) !important;
       background: transparent;
-      font-size: 0.9em;
+      font-size: 0.85em;
       letter-spacing: 2px;
       transition: all 0.3s ease;
       text-decoration: none !important;
@@ -136,6 +137,25 @@ import BaseLayout from '/src/layouts/BaseLayout.astro';
       transform: translateY(-4px);
       background: #1b1b1b;
     }
+
+    /* 📱 RESPONSIVE REAL */
+
+    @media (max-width: 600px) {
+      .home-box {
+        padding: 70px 35px;
+      }
+
+      .home-logo {
+        width: 150px;
+        margin-bottom: 40px;
+      }
+
+      .home-button {
+        padding: 12px 35px;
+        font-size: 0.8em;
+      }
+    }
+
   </style>
 
 </BaseLayout>
