@@ -603,7 +603,7 @@ const { Content } = await post.render();
   <script is:inline>
   function initCommentsSystem() {
 
-    const slug = document.getElementById("__post_slug").dataset.slug;
+
     const panel = document.getElementById("commentsPanel");
     const overlay = document.getElementById("overlay");
     const adminInput = document.getElementById("admin-code");
@@ -645,7 +645,9 @@ const { Content } = await post.render();
     });
 
     async function loadComments() {
-      const res = await fetch(`/api/comments?slug=${slug}`);
+      const currentSlug = window.location.pathname.split("/").filter(Boolean).pop();
+const res = await fetch(`/api/comments?slug=${currentSlug}`);
+
       const comments = await res.json();
 
       const count = comments.length;
@@ -735,7 +737,7 @@ const { Content } = await post.render();
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      post_slug: slug,
+      post_slug: window.location.pathname.split("/").filter(Boolean).pop(),
       author: name,
       content,
       website, // 👈 se envía al backend
