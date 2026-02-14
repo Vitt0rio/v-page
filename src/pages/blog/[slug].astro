@@ -897,13 +897,6 @@ const { Content } = await post.render();
        Toda la lógica del sistema de comentarios
 
     */
-     // ============================================
-     // PROTECCIÓN ANTI-REINICIALIZACIÓN (SPA)
-     // ============================================
-
-      if (window.__COMMENTS_INITIALIZED__) return;
-      window.__COMMENTS_INITIALIZED__ = true;
-
     
     function initCommentsSystem() {
       // ============================================
