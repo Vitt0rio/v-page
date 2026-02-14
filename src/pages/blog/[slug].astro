@@ -599,7 +599,8 @@ const { Content } = await post.render();
 
   <script is:inline>
 
-  <div id="post-slug" data-slug={slug} style="display:none"></div>
+  <div id="post-slug" data-slug={`${slug}`} style="display:none"></div>
+
 
   <script is:inline>
   function initCommentsSystem() {
