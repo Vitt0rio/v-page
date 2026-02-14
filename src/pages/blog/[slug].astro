@@ -1,46 +1,103 @@
 ---
+// ============================================
+// IMPORTS Y CONFIGURACIÓN INICIAL
+// ============================================
+// BaseLayout: Layout principal del sitio que envuelve todas las páginas
 import BaseLayout from '../../layouts/BaseLayout.astro';
+// getCollection: Función de Astro para obtener colecciones de contenido
 import { getCollection } from 'astro:content';
 
+// ============================================
+// OBTENCIÓN DEL POST
+// ============================================
+// Extraemos el slug de los parámetros de la URL
+// Por ejemplo: /blog/mi-post -> slug = "mi-post"
 const { slug } = Astro.params;
 
+// Obtenemos todos los posts de la colección 'blog'
 const posts = await getCollection('blog');
+
+// Buscamos el post que coincida con el slug de la URL
 const post = posts.find((p) => p.slug === slug);
 
+// Si no existe el post, lanzamos un error 404
 if (!post) throw new Error("Post no encontrado");
 
+// Renderizamos el contenido del post (convierte markdown a HTML)
 const { Content } = await post.render();
 ---
 
+<!-- 
+  ============================================
+  ESTRUCTURA HTML DEL POST
+  ============================================
+-->
 <BaseLayout title={post.data.title}>
 
+<!-- 
+  Elemento invisible que guarda el slug actual
+  Lo usamos en JavaScript para identificar el post
+-->
 <div id="__post_slug" data-slug={slug}></div>
 
+  <!-- ============================================
+       CONTENEDOR DEL POST
+       ============================================ -->
   <div class="post-container">
+    <!-- Título del post -->
     <h1 class="post-title">{post.data.title}</h1>
+    
+    <!-- Fecha de publicación -->
     <div class="post-date">{post.data.date.toDateString()}</div>
 
+    <!-- Contenido renderizado del post (markdown convertido a HTML) -->
     <div class="post-content">
       <Content />
     </div>
   </div>
 
+  <!-- ============================================
+       BOTÓN FLOTANTE DE COMENTARIOS
+       ============================================
+       Botón fijo en la esquina inferior derecha
+       que abre el panel lateral de comentarios
+  -->
   <button class="comments-toggle" id="openComments">
+    <!-- Icono de burbuja de conversación -->
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>
     <span>Comentarios</span>
   </button>
 
+  <!-- ============================================
+       OVERLAY (FONDO OSCURO)
+       ============================================
+       Capa oscura que aparece cuando se abre el panel
+       Al hacer click se cierra el panel
+  -->
   <div class="overlay" id="overlay"></div>
 
+  <!-- ============================================
+       PANEL LATERAL DE COMENTARIOS
+       ============================================
+       Panel deslizante desde la derecha que contiene
+       todo el sistema de comentarios
+  -->
   <aside class="comments-panel" id="commentsPanel">
 
+    <!-- ============================================
+         HEADER DEL PANEL
+         ============================================
+         Encabezado sticky con título, contador y botón cerrar
+    -->
     <div class="panel-header">
       <div class="header-content">
         <h3>Comentarios</h3>
+        <!-- Contador de comentarios (se actualiza dinámicamente) -->
         <span class="comment-count" id="commentCount">0</span>
       </div>
+      <!-- Botón para cerrar el panel -->
       <button id="closeComments" class="close-btn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -49,17 +106,27 @@ const { Content } = await post.render();
       </button>
     </div>
 
+    <!-- ============================================
+         PANEL DE ADMINISTRADOR
+         ============================================
+         Sección colapsable para ingresar código de admin
+         Solo visible con el código correcto se pueden eliminar comentarios
+    -->
     <details class="admin-panel">
+      <!-- Botón que despliega/oculta el input -->
       <summary class="admin-toggle">
+        <!-- Icono de candado -->
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
         <span>Modo Admin</span>
+        <!-- Icono de chevron que rota al abrir -->
         <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </summary>
+      <!-- Contenido desplegable con input de contraseña -->
       <div class="admin-content">
         <input
           type="password"
@@ -69,11 +136,18 @@ const { Content } = await post.render();
       </div>
     </details>
 
+    <!-- ============================================
+         FORMULARIO DE NUEVO COMENTARIO
+         ============================================
+         Formulario para que los usuarios escriban y publiquen comentarios
+    -->
     <form id="comment-form" class="comment-form">
+      <!-- Encabezado del formulario -->
       <div class="form-header">
         <span class="form-title">Nuevo comentario</span>
       </div>
       
+      <!-- Textarea para el contenido del comentario -->
       <textarea
         id="comment-content"
         placeholder="Comparte tu opinión..."
@@ -82,15 +156,24 @@ const { Content } = await post.render();
         maxlength="1000"
       ></textarea>
 
+      <!-- Contador de caracteres (0/1000) -->
       <div class="char-count" id="charCount">0/1000</div>
 
+      <!-- Fila inferior con input de nombre y botón publicar -->
       <div class="form-bottom">
+        <!-- Input opcional para el nombre del autor -->
         <input
           type="text"
           id="comment-name"
           placeholder="Tu nombre (opcional)"
           maxlength="50"
         />
+        
+        <!-- 
+          HONEYPOT ANTI-SPAM
+          Campo oculto que solo los bots llenarán
+          Si este campo tiene valor, se rechaza el comentario silenciosamente
+        -->
          <input
            type="text"
            name="website"
@@ -100,8 +183,10 @@ const { Content } = await post.render();
            tabindex="-1"
         />
 
+        <!-- Botón para enviar el comentario -->
         <button type="submit" class="submit-btn" id="submitBtn">
           <span>Publicar</span>
+          <!-- Icono de enviar -->
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -109,20 +194,37 @@ const { Content } = await post.render();
         </button>
       </div>
 
+      <!-- Mensaje de error (se muestra cuando hay problemas al publicar) -->
       <div class="error-message" id="errorMessage"></div>
     </form>
 
+    <!-- Línea divisoria decorativa -->
     <div class="comments-divider"></div>
 
-    <!-- Loading state -->
+    <!-- ============================================
+         ESTADO DE CARGA
+         ============================================
+         Spinner que aparece mientras se cargan los comentarios
+    -->
     <div class="loading-state" id="loadingState">
       <div class="spinner"></div>
       <p>Cargando comentarios...</p>
     </div>
 
+    <!-- ============================================
+         LISTA DE COMENTARIOS
+         ============================================
+         Contenedor donde se insertan dinámicamente los comentarios
+    -->
     <div id="comments-list" class="comments-list"></div>
 
+    <!-- ============================================
+         ESTADO VACÍO
+         ============================================
+         Mensaje que aparece cuando no hay comentarios aún
+    -->
     <div class="empty-state" id="emptyState">
+      <!-- Icono de burbuja vacía -->
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
       </svg>
@@ -133,150 +235,189 @@ const { Content } = await post.render();
   </aside>
 
   <style>
+    /* ============================================
+       ESTILOS GLOBALES
+       ============================================ */
     * {
-      box-sizing: border-box;
+      box-sizing: border-box; /* Incluye padding y border en el tamaño total */
     }
 
+    /* ============================================
+       CONTENEDOR DEL POST
+       ============================================ */
     .post-container {
-      max-width: 900px;
-      margin: 140px auto;
-      padding: 0 40px;
-      line-height: 2;
+      max-width: 900px;      /* Ancho máximo para legibilidad */
+      margin: 140px auto;    /* Centrado con espacio superior */
+      padding: 0 40px;       /* Padding horizontal */
+      line-height: 2;        /* Espaciado entre líneas para mejor lectura */
     }
 
+    /* Fecha de publicación del post */
     .post-date {
-      font-size: 0.75em;
-      color: #555;
-      margin-bottom: 40px;
+      font-size: 0.75em;     /* Texto pequeño */
+      color: #555;           /* Color gris */
+      margin-bottom: 40px;   /* Espacio antes del contenido */
     }
 
-    /* ========== BOTÓN FLOTANTE ========== */
+    /* ============================================
+       BOTÓN FLOTANTE DE COMENTARIOS
+       ============================================
+       Botón fijo en la esquina inferior derecha
+    */
     .comments-toggle {
-      position: fixed;
-      bottom: 40px;
-      right: 40px;
-      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+      position: fixed;                               /* Posición fija en viewport */
+      bottom: 40px;                                  /* 40px desde abajo */
+      right: 40px;                                   /* 40px desde la derecha */
+      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); /* Gradiente oscuro */
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);   /* Borde sutil */
       padding: 14px 24px;
-      border-radius: 50px;
+      border-radius: 50px;                           /* Bordes muy redondeados (píldora) */
       font-size: 0.85em;
       cursor: pointer;
-      z-index: 1000;
+      z-index: 1000;                                 /* Por encima de otros elementos */
       display: flex;
       align-items: center;
-      gap: 10px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      gap: 10px;                                     /* Espacio entre icono y texto */
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);    /* Sombra suave */
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Transición suave con easing */
     }
 
+    /* Estado hover del botón flotante */
     .comments-toggle:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);                   /* Se eleva 2px */
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);   /* Sombra más pronunciada */
+      border-color: rgba(255, 255, 255, 0.2);       /* Borde más visible */
     }
 
+    /* Icono dentro del botón */
     .comments-toggle svg {
       transition: transform 0.3s;
     }
 
+    /* Icono crece al hacer hover */
     .comments-toggle:hover svg {
       transform: scale(1.1);
     }
 
-    /* ========== OVERLAY ========== */
+    /* ============================================
+       OVERLAY (FONDO OSCURO)
+       ============================================
+       Capa oscura que cubre toda la pantalla cuando
+       el panel está abierto
+    */
     .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
-      opacity: 0;
-      pointer-events: none;
+      position: fixed;                              /* Cubre todo el viewport */
+      inset: 0;                                     /* top, right, bottom, left = 0 */
+      background: rgba(0, 0, 0, 0.7);               /* Negro semi-transparente */
+      backdrop-filter: blur(8px);                   /* Desenfoque del fondo */
+      opacity: 0;                                   /* Invisible por defecto */
+      pointer-events: none;                         /* No intercepta clicks */
       transition: opacity 0.3s ease;
-      z-index: 1001;
+      z-index: 1001;                                /* Por encima del botón */
     }
 
+    /* Estado activo del overlay (visible) */
     .overlay.active {
-      opacity: 1;
-      pointer-events: all;
+      opacity: 1;                                   /* Visible */
+      pointer-events: all;                          /* Intercepta clicks para cerrar */
     }
 
-    /* ========== PANEL DE COMENTARIOS ========== */
+    /* ============================================
+       PANEL LATERAL DE COMENTARIOS
+       ============================================
+       Panel que se desliza desde la derecha
+    */
     .comments-panel {
       position: fixed;
       top: 0;
       right: 0;
-      width: 480px;
-      height: 100vh;
-      background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%);
-      border-left: 1px solid rgba(255, 255, 255, 0.05);
-      transform: translateX(100%);
-      transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+      width: 480px;                                 /* Ancho fijo del panel */
+      height: 100vh;                                /* Altura completa de la pantalla */
+      background: linear-gradient(180deg, #0f0f0f 0%, #0a0a0a 100%); /* Gradiente vertical oscuro */
+      border-left: 1px solid rgba(255, 255, 255, 0.05); /* Borde sutil izquierdo */
+      transform: translateX(100%);                  /* Oculto fuera de pantalla por defecto */
+      transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1); /* Animación suave */
       padding: 0;
-      overflow-y: auto;
-      z-index: 1002;
+      overflow-y: auto;                             /* Scroll vertical si es necesario */
+      z-index: 1002;                                /* Por encima del overlay */
       display: flex;
-      flex-direction: column;
+      flex-direction: column;                       /* Contenido en columna */
     }
 
+    /* Estado activo del panel (visible) */
     .comments-panel.active {
-      transform: translateX(0);
+      transform: translateX(0);                     /* Desliza hacia la vista */
     }
 
+    /* ============================================
+       SCROLLBAR PERSONALIZADO
+       ============================================
+       Estilos para la barra de scroll del panel
+       (solo funciona en navegadores Webkit/Chromium)
+    */
     .comments-panel::-webkit-scrollbar {
-      width: 8px;
+      width: 8px;                                   /* Ancho de la scrollbar */
     }
 
     .comments-panel::-webkit-scrollbar-track {
-      background: transparent;
+      background: transparent;                      /* Track invisible */
     }
 
     .comments-panel::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.1);        /* Thumb semi-transparente */
       border-radius: 4px;
     }
 
     .comments-panel::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.2);        /* Más visible al hacer hover */
     }
 
-    /* ========== HEADER ========== */
+    /* ============================================
+       HEADER DEL PANEL
+       ============================================
+       Encabezado sticky que permanece visible al hacer scroll
+    */
     .panel-header {
-      position: sticky;
+      position: sticky;                             /* Se mantiene fijo al hacer scroll */
       top: 0;
-      background: rgba(10, 10, 10, 0.95);
-      backdrop-filter: blur(20px);
+      background: rgba(10, 10, 10, 0.95);          /* Fondo semi-transparente */
+      backdrop-filter: blur(20px);                  /* Desenfoque del contenido detrás */
       padding: 32px 32px 24px;
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between;               /* Título a la izquierda, botón a la derecha */
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      z-index: 10;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Línea divisoria */
+      z-index: 10;                                  /* Por encima del contenido del panel */
     }
 
+    /* Contenedor del título y contador */
     .header-content {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 12px;                                    /* Espacio entre título y contador */
     }
 
+    /* Título "Comentarios" */
     .header-content h3 {
       margin: 0;
       font-size: 1.2em;
       font-weight: 600;
       color: #ffffff;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.02em;                      /* Tracking negativo (más compacto) */
     }
 
+    /* Badge con el número de comentarios */
     .comment-count {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.08);       /* Fondo semi-transparente */
       color: #999;
       font-size: 0.75em;
       padding: 4px 10px;
-      border-radius: 12px;
+      border-radius: 12px;                          /* Bordes redondeados */
       font-weight: 600;
     }
 
+    /* Botón de cerrar (X) */
     .close-btn {
       background: transparent;
       border: none;
@@ -290,59 +431,72 @@ const { Content } = await post.render();
       transition: all 0.2s;
     }
 
+    /* Estado hover del botón cerrar */
     .close-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.05);       /* Fondo sutil */
+      color: #fff;                                  /* Icono más visible */
     }
 
-    /* ========== PANEL ADMIN ========== */
+    /* ============================================
+       PANEL DE ADMINISTRADOR
+       ============================================
+       Sección colapsable con <details> nativo de HTML
+    */
     .admin-panel {
       margin: 0 32px;
       padding: 16px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Línea divisoria */
     }
 
+    /* Estado abierto del panel admin */
     .admin-panel[open] {
       padding-bottom: 20px;
     }
 
+    /* Botón que abre/cierra el panel admin */
     .admin-toggle {
       display: flex;
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      user-select: none;
+      user-select: none;                            /* No se puede seleccionar el texto */
       padding: 8px 12px;
       border-radius: 8px;
       transition: all 0.2s;
       font-size: 0.8em;
       color: #666;
-      list-style: none;
+      list-style: none;                             /* Quita el marcador por defecto */
     }
 
+    /* Estado hover del toggle */
     .admin-toggle:hover {
       background: rgba(255, 255, 255, 0.03);
       color: #888;
     }
 
+    /* Oculta el marcador de details en navegadores Webkit */
     .admin-toggle::-webkit-details-marker {
       display: none;
     }
 
+    /* Icono de chevron (flecha) */
     .admin-toggle .chevron {
-      margin-left: auto;
+      margin-left: auto;                            /* Se empuja a la derecha */
       transition: transform 0.2s;
     }
 
+    /* Rota el chevron cuando está abierto */
     .admin-panel[open] .admin-toggle .chevron {
       transform: rotate(180deg);
     }
 
+    /* Contenido del panel admin */
     .admin-content {
       padding: 12px 12px 0;
-      animation: slideDown 0.2s ease;
+      animation: slideDown 0.2s ease;               /* Animación de entrada */
     }
 
+    /* Animación de deslizamiento hacia abajo */
     @keyframes slideDown {
       from {
         opacity: 0;
@@ -354,6 +508,7 @@ const { Content } = await post.render();
       }
     }
 
+    /* Input de contraseña del admin */
     .admin-content input {
       width: 100%;
       background: rgba(0, 0, 0, 0.3);
@@ -365,36 +520,45 @@ const { Content } = await post.render();
       transition: all 0.2s;
     }
 
+    /* Estado focus del input */
     .admin-content input:focus {
-      outline: none;
-      background: rgba(0, 0, 0, 0.4);
-      border-color: rgba(255, 255, 255, 0.15);
-      color: #aaa;
+      outline: none;                                /* Quita el outline por defecto */
+      background: rgba(0, 0, 0, 0.4);              /* Fondo más oscuro */
+      border-color: rgba(255, 255, 255, 0.15);     /* Borde más visible */
+      color: #aaa;                                  /* Texto más claro */
     }
 
+    /* Placeholder del input */
     .admin-content input::placeholder {
       color: #555;
     }
 
-    /* ========== FORMULARIO ========== */
+    /* ============================================
+       FORMULARIO DE COMENTARIOS
+       ============================================
+       Formulario para escribir nuevos comentarios
+    */
     .comment-form {
       padding: 24px 32px;
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.02);       /* Fondo sutil */
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
+    /* Encabezado del formulario */
     .form-header {
       margin-bottom: 12px;
     }
 
+    /* Título "Nuevo comentario" */
     .form-title {
       font-size: 0.75em;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      text-transform: uppercase;                    /* TODO EN MAYÚSCULAS */
+      letter-spacing: 1px;                          /* Separación entre letras */
       color: #666;
       font-weight: 600;
     }
 
+    /* Textarea para escribir el comentario */
     .comment-form textarea {
       width: 100%;
       background: rgba(0, 0, 0, 0.3);
@@ -402,40 +566,45 @@ const { Content } = await post.render();
       border-radius: 12px;
       padding: 14px 16px;
       color: white;
-      resize: vertical;
+      resize: vertical;                             /* Solo se puede redimensionar verticalmente */
       font-size: 0.9em;
-      font-family: inherit;
+      font-family: inherit;                         /* Usa la fuente del sitio */
       line-height: 1.6;
       transition: all 0.2s;
-      min-height: 100px;
+      min-height: 100px;                            /* Altura mínima */
     }
 
+    /* Estado focus del textarea */
     .comment-form textarea:focus {
       outline: none;
       background: rgba(0, 0, 0, 0.4);
       border-color: rgba(255, 255, 255, 0.15);
     }
 
+    /* Placeholder del textarea */
     .comment-form textarea::placeholder {
       color: #555;
     }
 
+    /* Contador de caracteres (0/1000) */
     .char-count {
       font-size: 0.7em;
       color: #555;
-      text-align: right;
+      text-align: right;                            /* Alineado a la derecha */
       margin-top: 4px;
       margin-bottom: 8px;
     }
 
+    /* Fila inferior con input de nombre y botón */
     .form-bottom {
       display: flex;
-      gap: 12px;
+      gap: 12px;                                    /* Espacio entre elementos */
       margin-top: 12px;
     }
 
+    /* Input del nombre del autor */
     .form-bottom input {
-      flex: 1;
+      flex: 1;                                      /* Ocupa el espacio disponible */
       background: rgba(0, 0, 0, 0.3);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 10px;
@@ -445,6 +614,7 @@ const { Content } = await post.render();
       transition: all 0.2s;
     }
 
+    /* Estado focus del input nombre */
     .form-bottom input:focus {
       outline: none;
       background: rgba(0, 0, 0, 0.4);
@@ -452,10 +622,11 @@ const { Content } = await post.render();
       color: #ddd;
     }
 
+    /* Botón de publicar */
     .submit-btn {
-      background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%); /* Gradiente blanco */
       border: none;
-      color: #000;
+      color: #000;                                  /* Texto negro */
       padding: 12px 24px;
       font-size: 0.85em;
       font-weight: 600;
@@ -463,50 +634,63 @@ const { Content } = await post.render();
       border-radius: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 8px;                                     /* Espacio entre texto e icono */
       transition: all 0.2s;
-      white-space: nowrap;
+      white-space: nowrap;                          /* No permite salto de línea */
     }
 
+    /* Estado hover del botón (solo si no está deshabilitado) */
     .submit-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);                  /* Se eleva 1px */
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2); /* Sombra blanca */
     }
 
+    /* Estado active (al hacer click) */
     .submit-btn:active {
-      transform: translateY(0);
+      transform: translateY(0);                     /* Vuelve a su posición */
     }
 
+    /* Estado deshabilitado del botón */
     .submit-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+      opacity: 0.5;                                 /* Semi-transparente */
+      cursor: not-allowed;                          /* Cursor de "no permitido" */
     }
 
+    /* Mensaje de error */
     .error-message {
-      color: #ef4444;
+      color: #ef4444;                               /* Rojo */
       font-size: 0.8em;
       margin-top: 8px;
-      display: none;
+      display: none;                                /* Oculto por defecto */
     }
 
+    /* Estado visible del mensaje de error */
     .error-message.visible {
       display: block;
     }
 
-    /* ========== DIVISOR ========== */
+    /* ============================================
+       DIVISOR DECORATIVO
+       ============================================
+       Línea horizontal con gradiente
+    */
     .comments-divider {
       height: 1px;
       background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 0%,                             /* Transparente en los bordes */
+        rgba(255, 255, 255, 0.1) 50%,              /* Visible en el centro */
         transparent 100%
       );
       margin: 0 32px;
     }
 
-    /* ========== LOADING STATE ========== */
+    /* ============================================
+       ESTADO DE CARGA
+       ============================================
+       Spinner que aparece mientras cargan los comentarios
+    */
     .loading-state {
-      display: none;
+      display: none;                                /* Oculto por defecto */
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -514,39 +698,52 @@ const { Content } = await post.render();
       gap: 16px;
     }
 
+    /* Estado visible del loading */
     .loading-state.visible {
       display: flex;
     }
 
+    /* Spinner giratorio */
     .spinner {
       width: 40px;
       height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      border: 3px solid rgba(255, 255, 255, 0.1);  /* Borde gris */
+      border-top-color: #fff;                       /* Borde superior blanco */
+      border-radius: 50%;                           /* Círculo perfecto */
+      animation: spin 0.8s linear infinite;         /* Gira infinitamente */
     }
 
+    /* Animación de rotación */
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
+    /* Texto "Cargando..." */
     .loading-state p {
       color: #666;
       font-size: 0.9em;
     }
 
-    /* ========== LISTA DE COMENTARIOS ========== */
+    /* ============================================
+       LISTA DE COMENTARIOS
+       ============================================
+       Contenedor de todos los comentarios
+    */
     .comments-list {
       padding: 32px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
-      flex: 1;
+      gap: 24px;                                    /* Espacio entre comentarios */
+      flex: 1;                                      /* Ocupa el espacio restante */
     }
 
+    /* ============================================
+       ITEM DE COMENTARIO INDIVIDUAL
+       ============================================
+       Cada comentario individual
+    */
     .comment-item {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(255, 255, 255, 0.02);       /* Fondo sutil */
       border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 12px;
       padding: 18px 20px;
@@ -554,13 +751,14 @@ const { Content } = await post.render();
       flex-direction: column;
       gap: 8px;
       transition: all 0.3s;
-      animation: slideIn 0.4s ease;
+      animation: slideIn 0.4s ease;                 /* Animación de entrada */
     }
 
+    /* Animación de entrada del comentario */
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(20px);                /* Aparece desde abajo */
       }
       to {
         opacity: 1;
@@ -568,35 +766,40 @@ const { Content } = await post.render();
       }
     }
 
+    /* Estado hover del comentario */
     .comment-item:hover {
-      background: rgba(255, 255, 255, 0.04);
-      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);       /* Fondo ligeramente más claro */
+      border-color: rgba(255, 255, 255, 0.1);      /* Borde más visible */
     }
 
+    /* Nombre del autor del comentario */
     .comment-name {
       font-size: 0.85em;
-      font-weight: 600;
+      font-weight: 600;                             /* Bold */
       color: #f0f0f0;
       margin-bottom: 6px;
     }
 
+    /* Texto del comentario */
     .comment-text {
-      font-size: 0.8em;
-      font-weight: 300;
+      font-size: 0.8em;                             /* Tamaño pequeño */
+      font-weight: 300;                             /* Peso ligero (fino) */
       line-height: 1.6;
-      color: #b0b0b0;
-      white-space: pre-wrap;
-      word-break: break-word;
+      color: #b0b0b0;                               /* Color gris suave */
+      white-space: pre-wrap;                        /* Respeta saltos de línea */
+      word-break: break-word;                       /* Rompe palabras largas */
       margin-bottom: 8px;
     }
 
+    /* Fecha y hora del comentario */
     .comment-date {
-      font-size: 0.65em;
-      font-weight: 300;
-      color: #4a4a4a;
-      opacity: 0.7;
+      font-size: 0.65em;                            /* Muy pequeño */
+      font-weight: 300;                             /* Peso ligero */
+      color: #4a4a4a;                               /* Color muy sutil */
+      opacity: 0.7;                                 /* Semi-transparente */
     }
 
+    /* Botón de eliminar (solo visible para admin) */
     .delete-btn {
       font-size: 0.7em;
       color: #555;
@@ -604,20 +807,25 @@ const { Content } = await post.render();
       padding: 6px 12px;
       border-radius: 6px;
       transition: all 0.2s;
-      align-self: flex-start;
+      align-self: flex-start;                       /* Alineado a la izquierda */
       margin-top: 4px;
       border: none;
       background: transparent;
     }
 
+    /* Estado hover del botón eliminar */
     .delete-btn:hover {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);          /* Fondo rojo suave */
+      color: #ef4444;                               /* Texto rojo */
     }
 
-    /* ========== ESTADO VACÍO ========== */
+    /* ============================================
+       ESTADO VACÍO
+       ============================================
+       Mensaje cuando no hay comentarios
+    */
     .empty-state {
-      display: none;
+      display: none;                                /* Oculto por defecto */
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -627,15 +835,18 @@ const { Content } = await post.render();
       gap: 12px;
     }
 
+    /* Estado visible del empty state */
     .empty-state.visible {
       display: flex;
     }
 
+    /* Icono del empty state */
     .empty-state svg {
-      opacity: 0.3;
+      opacity: 0.3;                                 /* Muy tenue */
       margin-bottom: 8px;
     }
 
+    /* Texto principal del empty state */
     .empty-state p {
       font-size: 1em;
       font-weight: 600;
@@ -643,17 +854,24 @@ const { Content } = await post.render();
       margin: 0;
     }
 
+    /* Texto secundario del empty state */
     .empty-state span {
       font-size: 0.85em;
       color: #555;
     }
 
-    /* ========== RESPONSIVE ========== */
+    /* ============================================
+       RESPONSIVE
+       ============================================
+       Estilos para pantallas pequeñas (móviles)
+    */
     @media (max-width: 600px) {
+      /* Panel ocupa todo el ancho en móvil */
       .comments-panel {
         width: 100%;
       }
 
+      /* Botón flotante más pequeño y cerca del borde */
       .comments-toggle {
         bottom: 24px;
         right: 24px;
@@ -661,6 +879,7 @@ const { Content } = await post.render();
         font-size: 0.8em;
       }
 
+      /* Reduce el padding en móvil */
       .panel-header,
       .admin-panel,
       .comment-form,
@@ -672,7 +891,16 @@ const { Content } = await post.render();
   </style>
 
   <script is:inline>
+    /* ============================================
+       SISTEMA DE COMENTARIOS - JAVASCRIPT
+       ============================================
+       Toda la lógica del sistema de comentarios
+    */
     function initCommentsSystem() {
+      // ============================================
+      // REFERENCIAS A ELEMENTOS DEL DOM
+      // ============================================
+      // Obtenemos referencias a todos los elementos que necesitamos
       const panel = document.getElementById("commentsPanel");
       const overlay = document.getElementById("overlay");
       const adminInput = document.getElementById("admin-code");
@@ -687,15 +915,21 @@ const { Content } = await post.render();
       const charCount = document.getElementById("charCount");
       const errorMessage = document.getElementById("errorMessage");
 
+      // Si no existen los elementos esenciales, salimos de la función
       if (!panel || !openBtn) return;
 
+      // Variable que guarda si el usuario está autenticado como admin
       let isAdmin = false;
 
-      // Character counter
+      // ============================================
+      // CONTADOR DE CARACTERES
+      // ============================================
+      // Actualiza el contador conforme el usuario escribe
       contentInput?.addEventListener("input", () => {
         const length = contentInput.value.length;
         charCount.textContent = `${length}/1000`;
         
+        // Si se acerca al límite, cambia el color a rojo
         if (length > 900) {
           charCount.style.color = "#ef4444";
         } else {
@@ -703,77 +937,119 @@ const { Content } = await post.render();
         }
       });
 
+      // ============================================
+      // ABRIR PANEL
+      // ============================================
+      // Al hacer click en el botón flotante
       openBtn.onclick = () => {
-        panel.classList.add("active");
-        overlay.classList.add("active");
-        document.body.style.overflow = "hidden";
-        loadComments();
+        panel.classList.add("active");           // Muestra el panel
+        overlay.classList.add("active");         // Muestra el overlay
+        document.body.style.overflow = "hidden"; // Deshabilita scroll del body
+        loadComments();                          // Carga los comentarios
       };
 
+      // ============================================
+      // CERRAR PANEL
+      // ============================================
+      // Al hacer click en el botón cerrar o en el overlay
       closeBtn.onclick = closePanel;
       overlay.onclick = closePanel;
 
       function closePanel() {
-        panel.classList.remove("active");
-        overlay.classList.remove("active");
-        document.body.style.overflow = "";
+        panel.classList.remove("active");        // Oculta el panel
+        overlay.classList.remove("active");      // Oculta el overlay
+        document.body.style.overflow = "";       // Restaura el scroll del body
       }
 
+      // ============================================
+      // CERRAR CON TECLA ESC
+      // ============================================
+      // Permite cerrar el panel presionando Escape
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && panel.classList.contains("active")) {
           closePanel();
         }
       });
 
+      // ============================================
+      // MODO ADMINISTRADOR
+      // ============================================
+      // Verifica el código admin conforme el usuario escribe
       adminInput?.addEventListener("input", () => {
-        isAdmin = adminInput.value === "0000";
-        loadComments();
+        isAdmin = adminInput.value === "0000";   // Código hardcodeado (cambiar en producción)
+        loadComments();                          // Recarga comentarios para mostrar/ocultar botones eliminar
       });
 
+      // ============================================
+      // MOSTRAR MENSAJES DE ERROR
+      // ============================================
+      // Función helper para mostrar errores al usuario
       function showError(message) {
         errorMessage.textContent = message;
         errorMessage.classList.add("visible");
+        // Auto-ocultar después de 5 segundos
         setTimeout(() => {
           errorMessage.classList.remove("visible");
         }, 5000);
       }
 
+      // ============================================
+      // CARGAR COMENTARIOS DESDE LA API
+      // ============================================
       async function loadComments() {
+        // Obtiene el slug del post actual
         const currentSlug = document.getElementById("__post_slug")?.dataset.slug;
         if (!currentSlug) return;
 
         try {
+          // Muestra el spinner de carga
           loadingState.classList.add("visible");
           emptyState.classList.remove("visible");
           commentsList.style.display = "none";
 
+          // Hace petición GET a la API con el slug
           const res = await fetch(`/api/comments?slug=${encodeURIComponent(currentSlug)}`);
           
+          // Si la respuesta no es OK, lanza error
           if (!res.ok) {
             throw new Error("Error al cargar comentarios");
           }
 
+          // Parsea la respuesta JSON
           const comments = await res.json();
           const count = comments.length;
+          
+          // Actualiza el contador en el header
           commentCount.textContent = count;
 
+          // Oculta el spinner
           loadingState.classList.remove("visible");
 
+          // Si no hay comentarios, muestra el empty state
           if (count === 0) {
             emptyState.classList.add("visible");
             commentsList.style.display = "none";
           } else {
+            // Si hay comentarios, muestra la lista
             emptyState.classList.remove("visible");
             commentsList.style.display = "flex";
           }
 
+          // Limpia la lista antes de insertar
           commentsList.innerHTML = "";
 
+          // ============================================
+          // RENDERIZAR CADA COMENTARIO
+          // ============================================
           comments.forEach((c) => {
+            // Crea el contenedor del comentario
             const div = document.createElement("div");
             div.classList.add("comment-item");
 
+            // Nombre del autor (o "Anónimo" si no hay)
             const name = c.author || "Anónimo";
+            
+            // Formatea la fecha en español
             const dateStr = new Date(c.created_at).toLocaleString("es-ES", {
               year: "numeric",
               month: "short",
@@ -782,22 +1058,27 @@ const { Content } = await post.render();
               minute: "2-digit"
             });
 
+            // Crea elemento para el nombre
             const nameDiv = document.createElement("div");
             nameDiv.className = "comment-name";
             nameDiv.textContent = name;
 
+            // Crea elemento para el texto del comentario
             const text = document.createElement("div");
             text.className = "comment-text";
             text.textContent = c.content;
 
+            // Crea elemento para la fecha
             const dateDiv = document.createElement("div");
             dateDiv.className = "comment-date";
             dateDiv.textContent = dateStr;
 
+            // Agrega los elementos al contenedor
             div.appendChild(nameDiv);
             div.appendChild(text);
             div.appendChild(dateDiv);
 
+            // Si es admin, agrega el botón de eliminar
             if (isAdmin) {
               const deleteBtn = document.createElement("button");
               deleteBtn.className = "delete-btn";
@@ -806,21 +1087,30 @@ const { Content } = await post.render();
               div.appendChild(deleteBtn);
             }
 
+            // Agrega el comentario a la lista
             commentsList.appendChild(div);
           });
         } catch (err) {
+          // Manejo de errores
           console.error("Error loading comments:", err);
           loadingState.classList.remove("visible");
           showError("Error al cargar los comentarios");
         }
       }
 
+      // ============================================
+      // ELIMINAR COMENTARIO
+      // ============================================
+      // Event listener delegado para botones de eliminar
+      // (funciona incluso con elementos creados dinámicamente)
       document.addEventListener("click", async (e) => {
         if (e.target.classList.contains("delete-btn")) {
           const id = e.target.getAttribute("data-id");
 
+          // Confirmación antes de eliminar
           if (confirm("¿Eliminar este comentario?")) {
             try {
+              // Petición DELETE a la API
               const res = await fetch("/api/comments", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
@@ -831,6 +1121,7 @@ const { Content } = await post.render();
                 throw new Error("Error al eliminar");
               }
 
+              // Recarga los comentarios para reflejar el cambio
               await loadComments();
             } catch (err) {
               console.error("Error deleting comment:", err);
@@ -840,27 +1131,35 @@ const { Content } = await post.render();
         }
       });
 
+      // ============================================
+      // PUBLICAR NUEVO COMENTARIO
+      // ============================================
       form?.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Previene el envío normal del formulario
 
+        // Obtiene referencias a los inputs
         const nameInput = document.getElementById("comment-name");
         const contentInput = document.getElementById("comment-content");
         const websiteInput = document.getElementById("comment-website");
         const submitBtn = document.getElementById("submitBtn");
 
+        // Obtiene y limpia los valores
         const name = nameInput?.value.trim() || "Anónimo";
         const content = contentInput?.value.trim();
-        const website = websiteInput?.value.trim();
+        const website = websiteInput?.value.trim(); // Honeypot
 
+        // Validación: mínimo 3 caracteres
         if (!content || content.length < 3) {
           showError("El comentario debe tener al menos 3 caracteres");
           return;
         }
 
         try {
+          // Deshabilita el botón mientras se envía
           submitBtn.disabled = true;
           submitBtn.querySelector("span").textContent = "Publicando...";
 
+          // Petición POST a la API
           const res = await fetch("/api/comments", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -868,7 +1167,7 @@ const { Content } = await post.render();
               post_slug: document.getElementById("__post_slug")?.dataset.slug,
               author: name,
               content,
-              website,
+              website, // El backend lo usa para detectar spam
             }),
           });
 
@@ -877,26 +1176,32 @@ const { Content } = await post.render();
             throw new Error(error.error || "Error al publicar");
           }
 
+          // Limpia el formulario
           contentInput.value = "";
           nameInput.value = "";
           websiteInput.value = "";
           charCount.textContent = "0/1000";
 
+          // Recarga los comentarios para mostrar el nuevo
           await loadComments();
         } catch (err) {
           console.error("Error posting comment:", err);
           showError(err.message || "Error al publicar el comentario");
         } finally {
+          // Rehabilita el botón
           submitBtn.disabled = false;
           submitBtn.querySelector("span").textContent = "Publicar";
         }
       });
     }
 
-    // Ejecutar al cargar normal
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    // Ejecuta la función al cargar la página (navegación normal)
     document.addEventListener("DOMContentLoaded", initCommentsSystem);
 
-    // Ejecutar cuando Astro cambia de página
+    // Ejecuta la función al cambiar de página en Astro (SPA-like navigation)
     document.addEventListener("astro:page-load", initCommentsSystem);
   </script>
 
